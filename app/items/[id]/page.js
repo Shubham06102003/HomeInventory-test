@@ -2,14 +2,17 @@
 'use client';
 
 import { useEffect, useState } from 'react'
+
 import Header from '@/components/ui/Header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { MapPin, Tag, User, Calendar, Package } from 'lucide-react'
+import { User, Calendar, MapPin, Tag, Package, X } from 'lucide-react'
 
 export default function ItemDetailPage({ params }) {
   const { id } = params
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewSrc, setPreviewSrc] = useState('')
 
   useEffect(() => {
     async function fetchItem() {
@@ -59,7 +62,11 @@ export default function ItemDetailPage({ params }) {
                 <img
                   src={`data:image/jpeg;base64,${item.itemImageBase64}`}
                   alt={item.name}
-                  className="w-full aspect-video object-cover rounded mb-4"
+                  className="w-full aspect-video object-cover rounded mb-4 cursor-pointer"
+                  onClick={() => {
+                    setPreviewSrc(`data:image/jpeg;base64,${item.itemImageBase64}`)
+                    setShowPreview(true)
+                  }}
                 />
               ) : (
                 <div className="w-full aspect-video flex items-center justify-center bg-gray-200 rounded mb-4">
@@ -93,7 +100,11 @@ export default function ItemDetailPage({ params }) {
                     <img
                       src={`data:image/jpeg;base64,${item.placeImageBase64}`}
                       alt={`Location of ${item.name}`}
-                      className="w-full aspect-video object-cover rounded"
+                      className="w-full aspect-video object-cover rounded cursor-pointer"
+                      onClick={() => {
+                        setPreviewSrc(`data:image/jpeg;base64,${item.placeImageBase64}`)
+                        setShowPreview(true)
+                      }}
                     />
                   </div>
                 )}
@@ -101,6 +112,25 @@ export default function ItemDetailPage({ params }) {
             </CardContent>
           </Card>
         </div>
+        {/* Image Preview Modal */}
+        {showPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+            <div className="relative max-w-2xl w-full">
+              <button
+                className="absolute top-2 right-2 bg-white rounded-full p-2 shadow hover:bg-gray-100 z-10"
+                onClick={() => setShowPreview(false)}
+                aria-label="Close preview"
+              >
+                <X className="h-6 w-6 text-gray-700" />
+              </button>
+              <img
+                src={previewSrc}
+                alt="Preview"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-lg"
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
