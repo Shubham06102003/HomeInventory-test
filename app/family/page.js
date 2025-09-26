@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { Users, Plus, Copy, Home, Package, Search, Clock, Settings } from 'lucide-react'
 import Link from 'next/link'
+import Header from '@/components/ui/Header'
 
 export default function FamilyPage() {
   const { user } = useUser()
@@ -123,35 +124,14 @@ export default function FamilyPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Home className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Home Inventory</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {family && (
-                <nav className="flex items-center gap-4">
-                  <Link href="/items" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                    <Package className="h-4 w-4" />
-                    Items
-                  </Link>
-                  <Link href="/items/latest" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                    <Clock className="h-4 w-4" />
-                    Latest
-                  </Link>
-                  <Link href="/settings" className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </nav>
-              )}
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        title="Home Inventory"
+        navLinks={family ? [
+          { href: '/items', label: 'Items' },
+          { href: '/items/latest', label: 'Latest' },
+          { href: '/settings', label: 'Settings' }
+        ] : []}
+      />
 
       <main className="container mx-auto px-4 py-8">
         {family ? (
@@ -235,7 +215,10 @@ export default function FamilyPage() {
               <CardContent>
                 <div className="space-y-3">
                   {familyMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={member.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
                           {member.userName?.charAt(0)?.toUpperCase() || member.userEmail?.charAt(0)?.toUpperCase() || 'U'}
@@ -245,7 +228,10 @@ export default function FamilyPage() {
                           <p className="text-sm text-gray-500">{member.userEmail}</p>
                         </div>
                       </div>
-                      <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={member.role === 'admin' ? 'default' : 'secondary'}
+                        className="w-fit sm:w-auto mt-2 sm:mt-0"
+                      >
                         {member.role}
                       </Badge>
                     </div>

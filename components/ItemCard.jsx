@@ -35,7 +35,7 @@ export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
           </div>
         )}
         {showDate && (
-          <Badge className="absolute top-2 right-2 bg-black/70 text-white">
+          <Badge className="absolute top-2 left-2 bg-black/70 text-white">
             {formatDate(item.createdAt)}
           </Badge>
         )}

@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Home, Clock, Package, Plus } from 'lucide-react'
 import Link from 'next/link'
 import ItemCard from '@/components/ItemCard'
+import Header from '@/components/ui/Header'
 
 export default function LatestItemsPage() {
   const { user } = useUser()
@@ -89,24 +90,14 @@ export default function LatestItemsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Home className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Home Inventory</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-4">
-                <Link href="/family" className="text-gray-600 hover:text-gray-900">Family</Link>
-                <Link href="/items" className="text-gray-600 hover:text-gray-900">Items</Link>
-                <Link href="/settings" className="text-gray-600 hover:text-gray-900">Settings</Link>
-              </nav>
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        title="Home Inventory"
+        navLinks={[
+          { href: '/family', label: 'Family' },
+          { href: '/items', label: 'Items' },
+          { href: '/settings', label: 'Settings' }
+        ]}
+      />
 
       <main className="container mx-auto px-4 py-8">
         {/* Page Header */}
