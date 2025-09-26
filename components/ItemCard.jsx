@@ -2,9 +2,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Tag, User, Calendar, Package } from 'lucide-react'
+import { MapPin, Tag, User, Calendar, Package, MoreVertical } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from '@/components/ui/dropdown-menu'
 
-export default function ItemCard({ item, showDate = false }) {
+export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -33,8 +39,26 @@ export default function ItemCard({ item, showDate = false }) {
             {formatDate(item.createdAt)}
           </Badge>
         )}
+        {/* Dropdown menu top right */}
+        <div className="absolute top-2 right-2 z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1 rounded-full bg-white/80 hover:bg-white shadow border border-gray-200 focus:outline-none">
+                <MoreVertical className="h-5 w-5 text-gray-700" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit?.(item)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete?.(item)} className="text-red-600">
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-      
+
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">

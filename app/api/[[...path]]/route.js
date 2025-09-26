@@ -48,10 +48,53 @@ async function handleRoute(request, { params }) {
   const { path = [] } = params
   const route = `/${path.join('/')}`
   const method = request.method
+  // Always initialize db and userId first
+  const db = await connectToMongo()
+  const { userId } = auth()
+  // Delete Item Route
+  if (route.startsWith('/items/delete/') && method === 'DELETE') {
+    const itemId = path[2]
+    const familyId = request.headers.get('x-family-id')
+    if (!itemId || !familyId) {
+      return handleCORS(NextResponse.json({ error: 'Item ID and family ID required' }, { status: 400 }))
+    }
+    // Verify user is member of the family
+    const membership = await db.collection('family_members').findOne({ familyId, userId })
+    if (!membership) {
+      return handleCORS(NextResponse.json({ error: 'You are not a member of this family' }, { status: 403 }))
+    }
+    const result = await db.collection('items').deleteOne({ id: itemId, familyId })
+    if (result.deletedCount === 1) {
+      return handleCORS(NextResponse.json({ success: true }))
+    } else {
+      return handleCORS(NextResponse.json({ error: 'Item not found or not deleted' }, { status: 404 }))
+    }
+  }
 
   try {
     const db = await connectToMongo()
     const { userId } = auth()
+    console.log('Clerk userId:', userId)
+    // Store user in 'users' collection if not exists
+    if (userId) {
+      const userObj = await currentUser()
+      if (userObj) {
+        await db.collection('users').updateOne(
+          { userId },
+          {
+            $set: {
+              userId,
+              fullName: userObj.fullName || '',
+              firstName: userObj.firstName || '',
+              lastName: userObj.lastName || '',
+              email: userObj.emailAddresses?.[0]?.emailAddress || '',
+              createdAt: userObj.createdAt ? new Date(userObj.createdAt) : new Date()
+            }
+          },
+          { upsert: true }
+        )
+      }
+    }
 
     // Public routes (no auth required)
     if (route === '/' && method === 'GET') {
@@ -199,6 +242,57 @@ async function handleRoute(request, { params }) {
     }
 
     // Item Routes
+    if (route.startsWith('/items/edit/') && method === 'PUT') {
+      const itemId = path[2]
+      const body = await request.json()
+      const { name, description, itemImageBase64, placeImageBase64, tags, location, familyId } = body
+
+      if (!itemId || !name?.trim() || !familyId) {
+        return handleCORS(NextResponse.json(
+          { error: 'Item ID, name, and family ID are required' },
+          { status: 400 }
+        ))
+      }
+
+      // Verify user is member of the family
+      const membership = await db.collection('family_members').findOne({
+        familyId,
+        userId
+      })
+
+      if (!membership) {
+        return handleCORS(NextResponse.json(
+          { error: 'You are not a member of this family' },
+          { status: 403 }
+        ))
+      }
+
+      // Update item
+      const updateResult = await db.collection('items').updateOne(
+        { id: itemId, familyId },
+        {
+          $set: {
+            name: name.trim(),
+            description: description?.trim() || '',
+            itemImageBase64: itemImageBase64 || '',
+            placeImageBase64: placeImageBase64 || '',
+            tags: tags?.trim() || '',
+            location: location?.trim() || ''
+          }
+        }
+      )
+
+      if (updateResult.matchedCount === 0) {
+        return handleCORS(NextResponse.json(
+          { error: 'Item not found or you do not have permission to edit' },
+          { status: 404 }
+        ))
+      }
+
+      const updatedItem = await db.collection('items').findOne({ id: itemId, familyId })
+
+      return handleCORS(NextResponse.json({ item: { ...updatedItem, _id: undefined } }))
+    }
     if (route === '/items/add' && method === 'POST') {
       const body = await request.json()
       const { name, description, itemImageBase64, placeImageBase64, tags, location, familyId } = body

@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { Home, Package, Search, Plus, MapPin, Tag, User, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import ItemCard from '@/components/ItemCard'
+import EditItemForm from '@/components/EditItemForm'
 import SearchBar from '@/components/SearchBar'
 
 export default function ItemsPage() {
@@ -19,6 +20,8 @@ export default function ItemsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredItems, setFilteredItems] = useState([])
+  const [editingItem, setEditingItem] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -196,7 +199,34 @@ export default function ItemsPage() {
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard
+                key={item.id}
+                item={item}
+                onEdit={(itm) => {
+                  setEditingItem(itm)
+                  setShowEditModal(true)
+                }}
+                onDelete={async (itm) => {
+                  if (!window.confirm('Are you sure you want to delete this item?')) return
+                  try {
+                    const response = await fetch(`/api/items/delete/${itm.id}`, {
+                      method: 'DELETE',
+                      headers: {
+                        'x-family-id': family.id
+                      }
+                    })
+                    if (response.ok) {
+                      toast.success('Item deleted successfully!')
+                      fetchItems()
+                    } else {
+                      const error = await response.json()
+                      toast.error(error.error || 'Failed to delete item')
+                    }
+                  } catch (error) {
+                    toast.error('Failed to delete item')
+                  }
+                }}
+              />
             ))}
           </div>
         ) : (
@@ -222,6 +252,38 @@ export default function ItemsPage() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Edit Item Modal */}
+        {showEditModal && editingItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingItem(null)
+                }}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+              <EditItemForm
+                item={editingItem}
+                family={family}
+                onSuccess={() => {
+                  setShowEditModal(false)
+                  setEditingItem(null)
+                  fetchItems()
+                  toast.success('Item updated successfully!')
+                }}
+                onCancel={() => {
+                  setShowEditModal(false)
+                  setEditingItem(null)
+                }}
+              />
+            </div>
+          </div>
         )}
       </main>
     </div>
