@@ -51,6 +51,26 @@ async function handleRoute(request, { params }) {
   // Always initialize db and userId first
   const db = await connectToMongo()
   const { userId } = auth()
+
+  // Batch fetch family and items together
+  if (route === '/family-with-items' && method === 'GET') {
+    if (!userId) {
+      return handleCORS(NextResponse.json({ error: 'Unauthorized - Please sign in' }, { status: 401 }))
+    }
+    const membership = await db.collection('family_members').findOne({ userId })
+    if (!membership) {
+      return handleCORS(NextResponse.json({ family: null, items: [] }))
+    }
+    const family = await db.collection('families').findOne({ id: membership.familyId })
+    if (!family) {
+      return handleCORS(NextResponse.json({ family: null, items: [] }))
+    }
+    const items = await db.collection('items').find({ familyId: family.id }).sort({ createdAt: -1 }).toArray()
+    return handleCORS(NextResponse.json({
+      family: { ...family, _id: undefined },
+      items: items.map(item => ({ ...item, _id: undefined }))
+    }))
+  }
   // Delete Item Route
   if (route.startsWith('/items/delete/') && method === 'DELETE') {
     const itemId = path[2]

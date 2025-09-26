@@ -15,7 +15,9 @@ export default function Header({ title, navLinks = [] }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Logo or icon can be added here if needed */}
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            <Link href="/family">
+              <h1 className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-150">{title}</h1>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             {isMobile ? (

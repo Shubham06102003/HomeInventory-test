@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Home, Package, Search, Plus, MapPin, Tag, User, Calendar } from 'lucide-react'
+import LoadingScreen from '@/components/LoadingScreen'
+
+
 import Link from 'next/link'
 import ItemCard from '@/components/ItemCard'
 import EditItemForm from '@/components/EditItemForm'
@@ -26,15 +29,9 @@ export default function ItemsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchFamily()
+      fetchFamilyAndItems()
     }
   }, [user])
-
-  useEffect(() => {
-    if (family) {
-      fetchItems()
-    }
-  }, [family])
 
   useEffect(() => {
     // Filter items based on search query
@@ -53,34 +50,21 @@ export default function ItemsPage() {
     }
   }, [searchQuery, items])
 
-  const fetchFamily = async () => {
+  const fetchFamilyAndItems = async () => {
+    setLoading(true)
     try {
-      const response = await fetch('/api/family/user')
+      const response = await fetch('/api/family-with-items')
       if (response.ok) {
         const data = await response.json()
         setFamily(data.family)
+        setItems(data.items)
+        setFilteredItems(data.items)
       } else {
         toast.error('Please join or create a family first')
       }
     } catch (error) {
-      console.error('Error fetching family:', error)
-      toast.error('Failed to load family')
-    }
-  }
-
-  const fetchItems = async () => {
-    try {
-      const response = await fetch(`/api/items/family/${family.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setItems(data.items)
-        setFilteredItems(data.items)
-      } else {
-        toast.error('Failed to load items')
-      }
-    } catch (error) {
-      console.error('Error fetching items:', error)
-      toast.error('Failed to load items')
+      console.error('Error fetching family/items:', error)
+      toast.error('Failed to load family/items')
     }
     setLoading(false)
   }
@@ -104,6 +88,10 @@ export default function ItemsPage() {
       toast.error('Search failed')
     }
     setLoading(false)
+  }
+
+  if (loading) {
+    return <LoadingScreen message="Loading items..." />
   }
 
   if (!family) {

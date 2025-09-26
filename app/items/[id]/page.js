@@ -2,10 +2,13 @@
 'use client';
 
 import { useEffect, useState } from 'react'
+import LoadingScreen from '@/components/LoadingScreen'
 
 import Header from '@/components/ui/Header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { User, Calendar, MapPin, Tag, Package, X } from 'lucide-react'
+
+
 
 export default function ItemDetailPage({ params }) {
   const { id } = params
@@ -33,7 +36,7 @@ export default function ItemDetailPage({ params }) {
   }, [id])
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <LoadingScreen message="Loading item details..." />
   }
 
   if (!item) {
