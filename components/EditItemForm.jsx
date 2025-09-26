@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { uploadToCloudinary } from '@/lib/uploadToCloudinary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,8 +16,10 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
     description: '',
     tags: '',
     location: '',
-    itemImageBase64: '',
-    placeImageBase64: ''
+    itemImageFile: null,
+    placeImageFile: null,
+    itemImageUrl: '',
+    placeImageUrl: ''
   })
   const [itemImagePreview, setItemImagePreview] = useState('')
   const [placeImagePreview, setPlaceImagePreview] = useState('')
@@ -29,11 +32,13 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
         description: item.description || '',
         tags: item.tags || '',
         location: item.location || '',
-        itemImageBase64: item.itemImageBase64 || '',
-        placeImageBase64: item.placeImageBase64 || ''
+        itemImageFile: null,
+        placeImageFile: null,
+        itemImageUrl: item.itemImageUrl || '',
+        placeImageUrl: item.placeImageUrl || ''
       })
-      setItemImagePreview(item.itemImageBase64 ? `data:image/jpeg;base64,${item.itemImageBase64}` : '')
-      setPlaceImagePreview(item.placeImageBase64 ? `data:image/jpeg;base64,${item.placeImageBase64}` : '')
+      setItemImagePreview(item.itemImageUrl ? item.itemImageUrl : (item.itemImageBase64 ? `data:image/jpeg;base64,${item.itemImageBase64}` : ''))
+      setPlaceImagePreview(item.placeImageUrl ? item.placeImageUrl : (item.placeImageBase64 ? `data:image/jpeg;base64,${item.placeImageBase64}` : ''))
     }
   }, [item])
 
@@ -58,12 +63,11 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
     }
     const reader = new FileReader()
     reader.onload = (event) => {
-      const base64String = event.target.result.split(',')[1]
       if (type === 'item') {
-        setFormData(prev => ({ ...prev, itemImageBase64: base64String }))
+        setFormData(prev => ({ ...prev, itemImageFile: file }))
         setItemImagePreview(event.target.result)
       } else if (type === 'place') {
-        setFormData(prev => ({ ...prev, placeImageBase64: base64String }))
+        setFormData(prev => ({ ...prev, placeImageFile: file }))
         setPlaceImagePreview(event.target.result)
       }
     }
@@ -72,10 +76,10 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
 
   const removeImage = (type) => {
     if (type === 'item') {
-      setFormData(prev => ({ ...prev, itemImageBase64: '' }))
+      setFormData(prev => ({ ...prev, itemImageFile: null, itemImageUrl: '' }))
       setItemImagePreview('')
     } else if (type === 'place') {
-      setFormData(prev => ({ ...prev, placeImageBase64: '' }))
+      setFormData(prev => ({ ...prev, placeImageFile: null, placeImageUrl: '' }))
       setPlaceImagePreview('')
     }
   }
@@ -87,7 +91,15 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
       return
     }
     setSubmitting(true)
+    let itemImageUrl = formData.itemImageUrl
+    let placeImageUrl = formData.placeImageUrl
     try {
+      if (formData.itemImageFile) {
+        itemImageUrl = await uploadToCloudinary(formData.itemImageFile)
+      }
+      if (formData.placeImageFile) {
+        placeImageUrl = await uploadToCloudinary(formData.placeImageFile)
+      }
       const response = await fetch(`/api/items/edit/${item.id}` , {
         method: 'PUT',
         headers: {
@@ -95,6 +107,8 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
         },
         body: JSON.stringify({
           ...formData,
+          itemImageUrl,
+          placeImageUrl,
           familyId: family.id
         })
       })

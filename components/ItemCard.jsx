@@ -25,9 +25,9 @@ export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
     <Link href={`/items/${item.id}`} className="block group">
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group-hover:ring-2 group-hover:ring-blue-500">
         <div className="aspect-video bg-gray-100 relative overflow-hidden">
-          {item.itemImageBase64 ? (
+          {(item.itemImageUrl || item.itemImageBase64) ? (
             <img 
-              src={`data:image/jpeg;base64,${item.itemImageBase64}`}
+              src={item.itemImageUrl ? item.itemImageUrl : `data:image/jpeg;base64,${item.itemImageBase64}`}
               alt={item.name}
               className="w-full h-full object-cover"
             />
@@ -107,12 +107,12 @@ export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
             )}
 
             {/* Place Image */}
-            {item.placeImageBase64 && (
+            {(item.placeImageUrl || item.placeImageBase64) && (
               <div className="mt-3">
                 <p className="text-xs text-gray-500 mb-2">Location photo:</p>
                 <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
                   <img 
-                    src={`data:image/jpeg;base64,${item.placeImageBase64}`}
+                    src={item.placeImageUrl ? item.placeImageUrl : `data:image/jpeg;base64,${item.placeImageBase64}`}
                     alt={`Location of ${item.name}`}
                     className="w-full h-full object-cover"
                   />

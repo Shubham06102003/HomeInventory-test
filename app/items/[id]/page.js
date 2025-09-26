@@ -61,13 +61,13 @@ export default function ItemDetailPage({ params }) {
               <CardDescription>{item.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              {item.itemImageBase64 ? (
+              {(item.itemImageUrl || item.itemImageBase64) ? (
                 <img
-                  src={`data:image/jpeg;base64,${item.itemImageBase64}`}
+                  src={item.itemImageUrl ? item.itemImageUrl : `data:image/jpeg;base64,${item.itemImageBase64}`}
                   alt={item.name}
                   className="w-full aspect-video object-cover rounded mb-4 cursor-pointer"
                   onClick={() => {
-                    setPreviewSrc(`data:image/jpeg;base64,${item.itemImageBase64}`)
+                    setPreviewSrc(item.itemImageUrl ? item.itemImageUrl : `data:image/jpeg;base64,${item.itemImageBase64}`)
                     setShowPreview(true)
                   }}
                 />
@@ -97,15 +97,15 @@ export default function ItemDetailPage({ params }) {
                     <span>{item.tags}</span>
                   </div>
                 )}
-                {item.placeImageBase64 && (
+                {(item.placeImageUrl || item.placeImageBase64) && (
                   <div className="mt-4">
                     <p className="text-xs text-gray-500 mb-2">Location photo:</p>
                     <img
-                      src={`data:image/jpeg;base64,${item.placeImageBase64}`}
+                      src={item.placeImageUrl ? item.placeImageUrl : `data:image/jpeg;base64,${item.placeImageBase64}`}
                       alt={`Location of ${item.name}`}
                       className="w-full aspect-video object-cover rounded cursor-pointer"
                       onClick={() => {
-                        setPreviewSrc(`data:image/jpeg;base64,${item.placeImageBase64}`)
+                        setPreviewSrc(item.placeImageUrl ? item.placeImageUrl : `data:image/jpeg;base64,${item.placeImageBase64}`)
                         setShowPreview(true)
                       }}
                     />

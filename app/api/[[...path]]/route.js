@@ -265,7 +265,7 @@ async function handleRoute(request, { params }) {
     if (route.startsWith('/items/edit/') && method === 'PUT') {
       const itemId = path[2]
       const body = await request.json()
-      const { name, description, itemImageBase64, placeImageBase64, tags, location, familyId } = body
+      const { name, description, itemImageUrl, placeImageUrl, itemImageBase64, placeImageBase64, tags, location, familyId } = body
 
       if (!itemId || !name?.trim() || !familyId) {
         return handleCORS(NextResponse.json(
@@ -294,6 +294,8 @@ async function handleRoute(request, { params }) {
           $set: {
             name: name.trim(),
             description: description?.trim() || '',
+            itemImageUrl: itemImageUrl || '',
+            placeImageUrl: placeImageUrl || '',
             itemImageBase64: itemImageBase64 || '',
             placeImageBase64: placeImageBase64 || '',
             tags: tags?.trim() || '',
@@ -315,7 +317,7 @@ async function handleRoute(request, { params }) {
     }
     if (route === '/items/add' && method === 'POST') {
       const body = await request.json()
-      const { name, description, itemImageBase64, placeImageBase64, tags, location, familyId } = body
+      const { name, description, itemImageUrl, placeImageUrl, tags, location, familyId } = body
 
       if (!name?.trim() || !familyId) {
         return handleCORS(NextResponse.json(
@@ -344,8 +346,8 @@ async function handleRoute(request, { params }) {
         addedByName: user?.fullName || user?.firstName || user?.emailAddresses?.[0]?.emailAddress || 'Unknown',
         name: name.trim(),
         description: description?.trim() || '',
-        itemImageBase64: itemImageBase64 || '',
-        placeImageBase64: placeImageBase64 || '',
+        itemImageUrl: itemImageUrl || '',
+        placeImageUrl: placeImageUrl || '',
         tags: tags?.trim() || '',
         location: location?.trim() || '',
         createdAt: new Date()

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { uploadToCloudinary } from '@/lib/uploadToCloudinary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,8 +16,10 @@ export default function AddItemForm({ family, onSuccess }) {
     description: '',
     tags: '',
     location: '',
-    itemImageBase64: '',
-    placeImageBase64: ''
+  itemImageFile: null,
+  placeImageFile: null,
+  itemImageUrl: '',
+  placeImageUrl: ''
   })
   const [itemImagePreview, setItemImagePreview] = useState('')
   const [placeImagePreview, setPlaceImagePreview] = useState('')
@@ -48,13 +51,11 @@ export default function AddItemForm({ family, onSuccess }) {
 
     const reader = new FileReader()
     reader.onload = (event) => {
-      const base64String = event.target.result.split(',')[1] // Remove data:image/...;base64, prefix
-      
       if (type === 'item') {
-        setFormData(prev => ({ ...prev, itemImageBase64: base64String }))
+        setFormData(prev => ({ ...prev, itemImageFile: file }))
         setItemImagePreview(event.target.result)
       } else if (type === 'place') {
-        setFormData(prev => ({ ...prev, placeImageBase64: base64String }))
+        setFormData(prev => ({ ...prev, placeImageFile: file }))
         setPlaceImagePreview(event.target.result)
       }
     }
@@ -63,25 +64,34 @@ export default function AddItemForm({ family, onSuccess }) {
 
   const removeImage = (type) => {
     if (type === 'item') {
-      setFormData(prev => ({ ...prev, itemImageBase64: '' }))
+      setFormData(prev => ({ ...prev, itemImageFile: null, itemImageUrl: '' }))
       setItemImagePreview('')
     } else if (type === 'place') {
-      setFormData(prev => ({ ...prev, placeImageBase64: '' }))
+      setFormData(prev => ({ ...prev, placeImageFile: null, placeImageUrl: '' }))
       setPlaceImagePreview('')
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
       toast.error('Item name is required')
       return
     }
 
     setSubmitting(true)
-    
+
+    let itemImageUrl = ''
+    let placeImageUrl = ''
     try {
+      if (formData.itemImageFile) {
+        itemImageUrl = await uploadToCloudinary(formData.itemImageFile)
+      }
+      if (formData.placeImageFile) {
+        placeImageUrl = await uploadToCloudinary(formData.placeImageFile)
+      }
+
       const response = await fetch('/api/items/add', {
         method: 'POST',
         headers: {
@@ -89,6 +99,8 @@ export default function AddItemForm({ family, onSuccess }) {
         },
         body: JSON.stringify({
           ...formData,
+          itemImageUrl,
+          placeImageUrl,
           familyId: family.id
         })
       })
@@ -103,7 +115,7 @@ export default function AddItemForm({ family, onSuccess }) {
       console.error('Error adding item:', error)
       toast.error('Failed to add item')
     }
-    
+
     setSubmitting(false)
   }
 
