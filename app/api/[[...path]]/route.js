@@ -389,6 +389,22 @@ async function handleRoute(request, { params }) {
       }
     }
 
+
+    // Fetch single item by id
+    if (route === '/items/by-id' && method === 'GET') {
+      const url = new URL(request.url)
+      const id = url.searchParams.get('id')
+      if (!id) {
+        return handleCORS(NextResponse.json({ error: 'Item id is required' }, { status: 400 }))
+      }
+      // Find item by id
+      const item = await db.collection('items').findOne({ id })
+      if (!item) {
+        return handleCORS(NextResponse.json({ item: null }, { status: 404 }))
+      }
+      return handleCORS(NextResponse.json({ item: { ...item, _id: undefined } }))
+    }
+
     if (route === '/items/search' && method === 'GET') {
       const url = new URL(request.url)
       const query = url.searchParams.get('query') || ''
