@@ -233,14 +233,11 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Clerk Authentication Integration"
-    - "Family Management API"
-    - "Item Management API"
-    - "MongoDB Integration"
+  current_focus: []
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
+  backend_testing_complete: true
 
 agent_communication:
   - agent: "main"
