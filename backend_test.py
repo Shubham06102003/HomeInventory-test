@@ -10,8 +10,8 @@ import base64
 import os
 from datetime import datetime
 
-# Get base URL from environment
-BASE_URL = "https://homeitems.preview.emergentagent.com/api"
+# Get base URL from environment - using local URL for testing
+BASE_URL = "http://localhost:3000/api"
 
 class HomeInventoryAPITester:
     def __init__(self):
