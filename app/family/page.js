@@ -13,24 +13,109 @@ import { toast } from 'sonner'
 import { Users, Plus, Copy, Home, Package, Search, Clock, Settings } from 'lucide-react'
 import Link from 'next/link'
 import Header from '@/components/ui/Header'
+import AwaitingApproval from '@/components/AwaitingApproval'
 
 
 
 export default function FamilyPage() {
+  // Awaiting approval modal state
+  const [showAwaiting, setShowAwaiting] = useState(false)
+  const [pendingInviteId, setPendingInviteId] = useState(null)
+  const handleRemoveMember = async (memberId) => {
+    try {
+      const response = await fetch('/api/family/members/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId })
+      })
+      if (response.ok) {
+        toast.success('Member removed!')
+        fetchUserFamily()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to remove member')
+      }
+    } catch (error) {
+      toast.error('Failed to remove member')
+    }
+  }
   const { user } = useUser()
   const [family, setFamily] = useState(null)
   const [familyMembers, setFamilyMembers] = useState([])
+  const [pendingInvitations, setPendingInvitations] = useState([])
   const [loading, setLoading] = useState(true)
   const [newFamilyName, setNewFamilyName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [creating, setCreating] = useState(false)
   const [joining, setJoining] = useState(false)
+  const [refreshingInvites, setRefreshingInvites] = useState(false)
 
   useEffect(() => {
     if (user) {
       fetchUserFamily()
     }
   }, [user])
+
+  useEffect(() => {
+    if (family && isAdmin()) {
+      fetchPendingInvitations()
+    }
+  }, [family])
+  const isAdmin = () => {
+    return familyMembers.some(m => m.userId === user?.id && m.role === 'admin')
+  }
+
+  const fetchPendingInvitations = async () => {
+    setRefreshingInvites(true)
+    try {
+      const response = await fetch('/api/family/invitations')
+      if (response.ok) {
+        const data = await response.json()
+        setPendingInvitations(data.invitations || [])
+      }
+    } catch (error) {
+      console.error('Error fetching invitations:', error)
+    }
+    setRefreshingInvites(false)
+  }
+  const handleAcceptInvitation = async (invitationId) => {
+    try {
+      const response = await fetch('/api/family/invitations/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId })
+      })
+      if (response.ok) {
+        toast.success('Invitation accepted!')
+        fetchUserFamily()
+        fetchPendingInvitations()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to accept invitation')
+      }
+    } catch (error) {
+      toast.error('Failed to accept invitation')
+    }
+  }
+
+  const handleRejectInvitation = async (invitationId) => {
+    try {
+      const response = await fetch('/api/family/invitations/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId })
+      })
+      if (response.ok) {
+        toast.success('Invitation rejected!')
+        fetchPendingInvitations()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to reject invitation')
+      }
+    } catch (error) {
+      toast.error('Failed to reject invitation')
+    }
+  }
 
   const fetchUserFamily = async () => {
     try {
@@ -51,7 +136,10 @@ export default function FamilyPage() {
       toast.error('Please enter a family name')
       return
     }
-
+    if (family) {
+      toast.error('You are already a member of a family!')
+      return
+    }
     setCreating(true)
     try {
       const response = await fetch('/api/family/create', {
@@ -59,7 +147,6 @@ export default function FamilyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newFamilyName.trim() })
       })
-
       if (response.ok) {
         const data = await response.json()
         setFamily(data.family)
@@ -93,10 +180,16 @@ export default function FamilyPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setFamily(data.family)
-        setFamilyMembers(data.members)
-        setInviteCode('')
-        toast.success('Joined family successfully!')
+        if (data.invitation) {
+          setPendingInviteId(data.invitation.id)
+          setShowAwaiting(true)
+          setInviteCode('')
+        } else {
+          setFamily(data.family)
+          setFamilyMembers(data.members)
+          setInviteCode('')
+          toast.success('Joined family successfully!')
+        }
       } else {
         const error = await response.json()
         toast.error(error.error || 'Failed to join family')
@@ -130,6 +223,22 @@ export default function FamilyPage() {
       />
 
       <main className="container mx-auto px-4 py-8">
+        {showAwaiting && pendingInviteId && (
+          <AwaitingApproval
+            invitationId={pendingInviteId}
+            onAccepted={() => {
+              setShowAwaiting(false);
+              setPendingInviteId(null);
+              fetchUserFamily();
+              toast.success('Your request was accepted!');
+            }}
+            onRejected={() => {
+              setShowAwaiting(false);
+              setPendingInviteId(null);
+              toast.error('Your request was rejected by the admin.');
+            }}
+          />
+        )}
         {family ? (
           <div className="space-y-8">
             {/* Family Info */}
@@ -202,6 +311,44 @@ export default function FamilyPage() {
               </CardContent>
             </Card>
 
+            {/* Pending Invitations (Admin only) */}
+            {isAdmin() && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Invitations</CardTitle>
+                  <CardDescription>
+                    {refreshingInvites ? 'Loading...' : `${pendingInvitations.length} pending`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {pendingInvitations.length === 0 && <p className="text-gray-500">No pending invitations.</p>}
+                    {pendingInvitations.map((invite) => (
+                      <div key={invite.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-yellow-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {invite.userName?.charAt(0)?.toUpperCase() || invite.userEmail?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <p className="font-medium">{invite.userName || invite.userEmail}</p>
+                            <p className="text-sm text-gray-500">{invite.userEmail}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-2 sm:mt-0">
+                          <Button size="sm" variant="default" onClick={() => handleAcceptInvitation(invite.id)}>
+                            Accept
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleRejectInvitation(invite.id)}>
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Family Members */}
             <Card>
               <CardHeader>
@@ -224,12 +371,20 @@ export default function FamilyPage() {
                           <p className="text-sm text-gray-500">{member.userEmail}</p>
                         </div>
                       </div>
-                      <Badge
-                        variant={member.role === 'admin' ? 'default' : 'secondary'}
-                        className="w-fit sm:w-auto mt-2 sm:mt-0"
-                      >
-                        {member.role}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={member.role === 'admin' ? 'default' : 'secondary'}
+                          className="w-fit sm:w-auto mt-2 sm:mt-0"
+                        >
+                          {member.role}
+                        </Badge>
+                        {/* Remove button for admin, not for self */}
+                        {isAdmin() && member.role !== 'admin' && (
+                          <Button size="sm" variant="destructive" onClick={() => handleRemoveMember(member.id)}>
+                            Remove
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -45,12 +45,38 @@ export async function OPTIONS() {
 
 // Route handler function
 async function handleRoute(request, { params }) {
+  // ...existing code...
   const { path = [] } = params
   const route = `/${path.join('/')}`
   const method = request.method
   // Always initialize db and userId first
   const db = await connectToMongo()
   const { userId } = auth()
+
+  // Admin: remove a family member
+  if (route === '/family/members/remove' && method === 'POST') {
+    const body = await request.json()
+    const { memberId } = body
+    if (!memberId) {
+      return handleCORS(NextResponse.json({ error: 'Member ID required' }, { status: 400 }))
+    }
+    // Find admin membership
+    const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' })
+    if (!adminMembership) {
+      return handleCORS(NextResponse.json({ error: 'Only family admin can remove members' }, { status: 403 }))
+    }
+    // Prevent admin from removing themselves
+    if (adminMembership.id === memberId) {
+      return handleCORS(NextResponse.json({ error: 'Admin cannot remove themselves' }, { status: 400 }))
+    }
+    // Remove member
+    const result = await db.collection('family_members').deleteOne({ id: memberId, familyId: adminMembership.familyId })
+    if (result.deletedCount === 1) {
+      return handleCORS(NextResponse.json({ success: true }))
+    } else {
+      return handleCORS(NextResponse.json({ error: 'Member not found or not removed' }, { status: 404 }))
+    }
+  }
 
   // Batch fetch family and items together
   if (route === '/family-with-items' && method === 'GET') {
@@ -173,6 +199,7 @@ async function handleRoute(request, { params }) {
       }))
     }
 
+    // User requests to join family (creates invitation)
     if (route === '/family/join' && method === 'POST') {
       const body = await request.json()
       const { inviteCode } = body
@@ -209,28 +236,112 @@ async function handleRoute(request, { params }) {
         ))
       }
 
-      // Add user as member
-      const member = {
+      // Check if invitation already exists
+      const existingInvitation = await db.collection('family_invitations').findOne({
+        familyId: family.id,
+        userId: userId,
+        status: 'pending'
+      })
+      if (existingInvitation) {
+        return handleCORS(NextResponse.json(
+          { error: 'You already have a pending invitation for this family' }, 
+          { status: 400 }
+        ))
+      }
+
+      // Create invitation
+      const invitation = {
         id: uuidv4(),
         familyId: family.id,
         userId: userId,
         userName: user?.fullName || user?.firstName || '',
         userEmail: user?.emailAddresses?.[0]?.emailAddress || '',
+        status: 'pending',
+        requestedAt: new Date()
+      }
+      await db.collection('family_invitations').insertOne(invitation)
+
+      return handleCORS(NextResponse.json({ success: true, invitation }))
+    }
+
+    // Admin: list pending invitations for their family
+    if (route === '/family/invitations' && method === 'GET') {
+      // Find admin membership
+      const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' })
+      if (!adminMembership) {
+        return handleCORS(NextResponse.json({ error: 'Only family admin can view invitations' }, { status: 403 }))
+      }
+      const invitations = await db.collection('family_invitations').find({ familyId: adminMembership.familyId, status: 'pending' }).toArray()
+      return handleCORS(NextResponse.json({ invitations: invitations.map(i => ({ ...i, _id: undefined })) }))
+    }
+
+    // GET /family/invitations/status?id=...
+    if (route === '/family/invitations/status' && method === 'GET') {
+      const url = new URL(request.url);
+      const invitationId = url.searchParams.get('id');
+      if (!invitationId) {
+        return handleCORS(NextResponse.json({ error: 'Invitation ID required' }, { status: 400 }));
+      }
+      const invitation = await db.collection('family_invitations').findOne({ id: invitationId });
+      if (!invitation) {
+        return handleCORS(NextResponse.json({ error: 'Invitation not found' }, { status: 404 }));
+      }
+      return handleCORS(NextResponse.json({ status: invitation.status }));
+    }
+
+    // Admin: accept invitation
+    if (route === '/family/invitations/accept' && method === 'POST') {
+      const body = await request.json()
+      const { invitationId } = body
+      if (!invitationId) {
+        return handleCORS(NextResponse.json({ error: 'Invitation ID required' }, { status: 400 }))
+      }
+      // Find admin membership
+      const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' })
+      if (!adminMembership) {
+        return handleCORS(NextResponse.json({ error: 'Only family admin can accept invitations' }, { status: 403 }))
+      }
+      // Find invitation
+      const invitation = await db.collection('family_invitations').findOne({ id: invitationId, familyId: adminMembership.familyId, status: 'pending' })
+      if (!invitation) {
+        return handleCORS(NextResponse.json({ error: 'Invitation not found or already handled' }, { status: 404 }))
+      }
+      // Add user as member
+      const member = {
+        id: uuidv4(),
+        familyId: invitation.familyId,
+        userId: invitation.userId,
+        userName: invitation.userName,
+        userEmail: invitation.userEmail,
         role: 'member',
         joinedAt: new Date()
       }
-
       await db.collection('family_members').insertOne(member)
+      // Mark invitation as accepted
+      await db.collection('family_invitations').updateOne({ id: invitationId }, { $set: { status: 'accepted', handledAt: new Date() } })
+      return handleCORS(NextResponse.json({ success: true, member }))
+    }
 
-      // Get all family members
-      const members = await db.collection('family_members')
-        .find({ familyId: family.id })
-        .toArray()
-
-      return handleCORS(NextResponse.json({ 
-        family: { ...family, _id: undefined }, 
-        members: members.map(m => ({ ...m, _id: undefined }))
-      }))
+    // Admin: reject invitation
+    if (route === '/family/invitations/reject' && method === 'POST') {
+      const body = await request.json()
+      const { invitationId } = body
+      if (!invitationId) {
+        return handleCORS(NextResponse.json({ error: 'Invitation ID required' }, { status: 400 }))
+      }
+      // Find admin membership
+      const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' })
+      if (!adminMembership) {
+        return handleCORS(NextResponse.json({ error: 'Only family admin can reject invitations' }, { status: 403 }))
+      }
+      // Find invitation
+      const invitation = await db.collection('family_invitations').findOne({ id: invitationId, familyId: adminMembership.familyId, status: 'pending' })
+      if (!invitation) {
+        return handleCORS(NextResponse.json({ error: 'Invitation not found or already handled' }, { status: 404 }))
+      }
+      // Mark invitation as rejected
+      await db.collection('family_invitations').updateOne({ id: invitationId }, { $set: { status: 'rejected', handledAt: new Date() } })
+      return handleCORS(NextResponse.json({ success: true }))
     }
 
     if (route === '/family/user' && method === 'GET') {
