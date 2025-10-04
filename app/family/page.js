@@ -437,6 +437,29 @@ export default function FamilyPage() {
                             }}
                           />
                         )}
+                        {/* Leave and Delete Family button for single admin with no members */}
+                        {member.userId === user?.id && member.role === 'admin' && familyMembers.length === 1 && (
+                          <Button size="sm" variant="destructive" onClick={async () => {
+                            try {
+                              const response = await fetch('/api/family/delete-and-leave', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                              });
+                              if (response.ok) {
+                                toast.success('Family deleted and you have left.');
+                                setFamily(null);
+                                setFamilyMembers([]);
+                              } else {
+                                const error = await response.json();
+                                toast.error(error.error || 'Failed to delete family');
+                              }
+                            } catch (error) {
+                              toast.error('Failed to delete family');
+                            }
+                          }}>
+                            Leave & Delete Family
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

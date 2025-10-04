@@ -45,6 +45,20 @@ export async function OPTIONS() {
 
 // Route handler function
 async function handleRoute(request, { params }) {
+  // Admin leaves and deletes family if only member
+  if (route === '/family/delete-and-leave' && method === 'POST') {
+    const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' });
+    if (!adminMembership) {
+      return handleCORS(NextResponse.json({ error: 'You are not the admin' }, { status: 403 }));
+    }
+    const memberCount = await db.collection('family_members').countDocuments({ familyId: adminMembership.familyId });
+    if (memberCount > 1) {
+      return handleCORS(NextResponse.json({ error: 'Family has other members. Cannot delete.' }, { status: 400 }));
+    }
+    await db.collection('family_members').deleteOne({ id: adminMembership.id });
+    await db.collection('families').deleteOne({ id: adminMembership.familyId });
+    return handleCORS(NextResponse.json({ success: true }));
+  }
 
   // Always initialize db and userId first
   const { path = [] } = params;
@@ -53,7 +67,7 @@ async function handleRoute(request, { params }) {
   const db = await connectToMongo();
   const { userId } = auth();
 
-  
+
   // Admin transfers role and leaves family
   if (route === '/family/members/transfer-admin-and-leave' && method === 'POST') {
     const body = await request.json();
