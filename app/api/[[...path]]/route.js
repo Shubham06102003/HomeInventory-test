@@ -45,6 +45,13 @@ export async function OPTIONS() {
 
 // Route handler function
 async function handleRoute(request, { params }) {
+  // Always initialize db and userId first
+  const { path = [] } = params;
+  const route = `/${path.join('/')}`;
+  const method = request.method;
+  const db = await connectToMongo();
+  const { userId } = auth();
+
   // Admin leaves and deletes family if only member
   if (route === '/family/delete-and-leave' && method === 'POST') {
     const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' });
@@ -59,14 +66,6 @@ async function handleRoute(request, { params }) {
     await db.collection('families').deleteOne({ id: adminMembership.familyId });
     return handleCORS(NextResponse.json({ success: true }));
   }
-
-  // Always initialize db and userId first
-  const { path = [] } = params;
-  const route = `/${path.join('/')}`;
-  const method = request.method;
-  const db = await connectToMongo();
-  const { userId } = auth();
-
 
   // Admin transfers role and leaves family
   if (route === '/family/members/transfer-admin-and-leave' && method === 'POST') {
