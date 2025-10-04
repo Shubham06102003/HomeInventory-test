@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import LoadingScreen from '@/components/LoadingScreen'
 import { useUser, UserButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import AdminLeaveFamilyDropdown from '@/components/AdminLeaveFamilyDropdown'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -357,7 +358,11 @@ export default function FamilyPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {familyMembers.map((member) => (
+                  {[...familyMembers].sort((a, b) => {
+                    if (a.role === 'admin' && b.role !== 'admin') return -1;
+                    if (a.role !== 'admin' && b.role === 'admin') return 1;
+                    return 0;
+                  }).map((member) => (
                     <div
                       key={member.id}
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg"
@@ -383,6 +388,54 @@ export default function FamilyPage() {
                           <Button size="sm" variant="destructive" onClick={() => handleRemoveMember(member.id)}>
                             Remove
                           </Button>
+                        )}
+                        {/* Leave Family button for self (non-admin) */}
+                        {member.userId === user?.id && member.role !== 'admin' && (
+                          <Button size="sm" variant="outline" onClick={async () => {
+                            try {
+                              const response = await fetch('/api/family/members/leave', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                              });
+                              if (response.ok) {
+                                toast.success('You have left the family.');
+                                setFamily(null);
+                                setFamilyMembers([]);
+                              } else {
+                                const error = await response.json();
+                                toast.error(error.error || 'Failed to leave family');
+                              }
+                            } catch (error) {
+                              toast.error('Failed to leave family');
+                            }
+                          }}>
+                            Leave Family
+                          </Button>
+                        )}
+                        {/* Leave Family button for admin (with transfer) */}
+                        {member.userId === user?.id && member.role === 'admin' && familyMembers.filter(m => m.role !== 'admin').length > 0 && (
+                          <AdminLeaveFamilyDropdown
+                            members={familyMembers.filter(m => m.role !== 'admin')}
+                            onTransfer={async (newAdminId) => {
+                              try {
+                                const response = await fetch('/api/family/members/transfer-admin-and-leave', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ newAdminId })
+                                });
+                                if (response.ok) {
+                                  toast.success('Admin role transferred and you have left the family.');
+                                  setFamily(null);
+                                  setFamilyMembers([]);
+                                } else {
+                                  const error = await response.json();
+                                  toast.error(error.error || 'Failed to leave family');
+                                }
+                              } catch (error) {
+                                toast.error('Failed to leave family');
+                              }
+                            }}
+                          />
                         )}
                       </div>
                     </div>

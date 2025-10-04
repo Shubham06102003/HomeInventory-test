@@ -45,13 +45,53 @@ export async function OPTIONS() {
 
 // Route handler function
 async function handleRoute(request, { params }) {
-  // ...existing code...
-  const { path = [] } = params
-  const route = `/${path.join('/')}`
-  const method = request.method
+
   // Always initialize db and userId first
-  const db = await connectToMongo()
-  const { userId } = auth()
+  const { path = [] } = params;
+  const route = `/${path.join('/')}`;
+  const method = request.method;
+  const db = await connectToMongo();
+  const { userId } = auth();
+
+  
+  // Admin transfers role and leaves family
+  if (route === '/family/members/transfer-admin-and-leave' && method === 'POST') {
+    const body = await request.json();
+    const { newAdminId } = body;
+    const adminMembership = await db.collection('family_members').findOne({ userId, role: 'admin' });
+    if (!adminMembership) {
+      return handleCORS(NextResponse.json({ error: 'You are not the admin' }, { status: 403 }));
+    }
+    // Check new admin is a member of the same family and not already admin
+    const newAdmin = await db.collection('family_members').findOne({ id: newAdminId, familyId: adminMembership.familyId });
+    if (!newAdmin || newAdmin.role === 'admin') {
+      return handleCORS(NextResponse.json({ error: 'Invalid new admin selection' }, { status: 400 }));
+    }
+    // Update new admin's role
+    await db.collection('family_members').updateOne({ id: newAdminId }, { $set: { role: 'admin' } });
+    // Remove current admin
+    await db.collection('family_members').deleteOne({ id: adminMembership.id });
+    return handleCORS(NextResponse.json({ success: true }));
+  }
+  
+
+  // Member leaves family
+  if (route === '/family/members/leave' && method === 'POST') {
+    const membership = await db.collection('family_members').findOne({ userId });
+    if (!membership) {
+      return handleCORS(NextResponse.json({ error: 'You are not a member of any family' }, { status: 400 }));
+    }
+    // Prevent admin from leaving (optional: you can allow if you want to transfer admin)
+    if (membership.role === 'admin') {
+      return handleCORS(NextResponse.json({ error: 'Admin cannot leave the family directly' }, { status: 400 }));
+    }
+    const result = await db.collection('family_members').deleteOne({ id: membership.id });
+    if (result.deletedCount === 1) {
+      return handleCORS(NextResponse.json({ success: true }));
+    } else {
+      return handleCORS(NextResponse.json({ error: 'Failed to leave family' }, { status: 500 }));
+    }
+  }
 
   // Admin: remove a family member
   if (route === '/family/members/remove' && method === 'POST') {
