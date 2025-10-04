@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import LoadingScreen from '@/components/LoadingScreen'
 import { useUser, UserButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import AdminLeaveFamilyDropdown from '@/components/AdminLeaveFamilyDropdown'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,8 @@ import AwaitingApproval from '@/components/AwaitingApproval'
 
 
 export default function FamilyPage() {
+  // Confirmation dialog state
+  const [confirmState, setConfirmState] = useState({ open: false, title: '', message: '', confirmText: 'Confirm', cancelText: 'Cancel', onConfirm: null });
   // Awaiting approval modal state
   const [showAwaiting, setShowAwaiting] = useState(false)
   const [pendingInviteId, setPendingInviteId] = useState(null)
@@ -224,6 +227,15 @@ export default function FamilyPage() {
       />
 
       <main className="container mx-auto px-4 py-8">
+        <ConfirmDialog
+          open={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmText={confirmState.confirmText}
+          cancelText={confirmState.cancelText}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState((prev) => ({ ...prev, open: false }))}
+        />
         {showAwaiting && pendingInviteId && (
           <AwaitingApproval
             invitationId={pendingInviteId}
@@ -385,29 +397,66 @@ export default function FamilyPage() {
                         </Badge>
                         {/* Remove button for admin, not for self */}
                         {isAdmin() && member.role !== 'admin' && (
-                          <Button size="sm" variant="destructive" onClick={() => handleRemoveMember(member.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => {
+                            setConfirmState({
+                              open: true,
+                              title: 'Remove Member',
+                              message: 'Are you sure you want to remove this member from the family?',
+                              confirmText: 'Remove',
+                              cancelText: 'Cancel',
+                              onConfirm: async () => {
+                                setConfirmState((prev) => ({ ...prev, open: false }));
+                                try {
+                                  const response = await fetch('/api/family/members/remove', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ memberId: member.id })
+                                  });
+                                  if (response.ok) {
+                                    toast.success('Member removed!');
+                                    fetchUserFamily();
+                                  } else {
+                                    const error = await response.json();
+                                    toast.error(error.error || 'Failed to remove member');
+                                  }
+                                } catch (error) {
+                                  toast.error('Failed to remove member');
+                                }
+                              }
+                            });
+                          }}>
                             Remove
                           </Button>
                         )}
                         {/* Leave Family button for self (non-admin) */}
                         {member.userId === user?.id && member.role !== 'admin' && (
-                          <Button size="sm" variant="outline" onClick={async () => {
-                            try {
-                              const response = await fetch('/api/family/members/leave', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                              });
-                              if (response.ok) {
-                                toast.success('You have left the family.');
-                                setFamily(null);
-                                setFamilyMembers([]);
-                              } else {
-                                const error = await response.json();
-                                toast.error(error.error || 'Failed to leave family');
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setConfirmState({
+                              open: true,
+                              title: 'Leave Family',
+                              message: 'Are you sure you want to leave the family?',
+                              confirmText: 'Leave',
+                              cancelText: 'Cancel',
+                              onConfirm: async () => {
+                                setConfirmState((prev) => ({ ...prev, open: false }));
+                                try {
+                                  const response = await fetch('/api/family/members/leave', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                  });
+                                  if (response.ok) {
+                                    toast.success('You have left the family.');
+                                    setFamily(null);
+                                    setFamilyMembers([]);
+                                  } else {
+                                    const error = await response.json();
+                                    toast.error(error.error || 'Failed to leave family');
+                                  }
+                                } catch (error) {
+                                  toast.error('Failed to leave family');
+                                }
                               }
-                            } catch (error) {
-                              toast.error('Failed to leave family');
-                            }
+                            });
                           }}>
                             Leave Family
                           </Button>
@@ -417,45 +466,65 @@ export default function FamilyPage() {
                           <AdminLeaveFamilyDropdown
                             members={familyMembers.filter(m => m.role !== 'admin')}
                             onTransfer={async (newAdminId) => {
-                              try {
-                                const response = await fetch('/api/family/members/transfer-admin-and-leave', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ newAdminId })
-                                });
-                                if (response.ok) {
-                                  toast.success('Admin role transferred and you have left the family.');
-                                  setFamily(null);
-                                  setFamilyMembers([]);
-                                } else {
-                                  const error = await response.json();
-                                  toast.error(error.error || 'Failed to leave family');
+                              setConfirmState({
+                                open: true,
+                                title: 'Transfer Admin & Leave',
+                                message: 'Are you sure you want to transfer admin role and leave the family?',
+                                confirmText: 'Transfer & Leave',
+                                cancelText: 'Cancel',
+                                onConfirm: async () => {
+                                  setConfirmState((prev) => ({ ...prev, open: false }));
+                                  try {
+                                    const response = await fetch('/api/family/members/transfer-admin-and-leave', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ newAdminId })
+                                    });
+                                    if (response.ok) {
+                                      toast.success('Admin role transferred and you have left the family.');
+                                      setFamily(null);
+                                      setFamilyMembers([]);
+                                    } else {
+                                      const error = await response.json();
+                                      toast.error(error.error || 'Failed to leave family');
+                                    }
+                                  } catch (error) {
+                                    toast.error('Failed to leave family');
+                                  }
                                 }
-                              } catch (error) {
-                                toast.error('Failed to leave family');
-                              }
+                              });
                             }}
                           />
                         )}
                         {/* Leave and Delete Family button for single admin with no members */}
                         {member.userId === user?.id && member.role === 'admin' && familyMembers.length === 1 && (
-                          <Button size="sm" variant="destructive" onClick={async () => {
-                            try {
-                              const response = await fetch('/api/family/delete-and-leave', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                              });
-                              if (response.ok) {
-                                toast.success('Family deleted and you have left.');
-                                setFamily(null);
-                                setFamilyMembers([]);
-                              } else {
-                                const error = await response.json();
-                                toast.error(error.error || 'Failed to delete family');
+                          <Button size="sm" variant="destructive" onClick={() => {
+                            setConfirmState({
+                              open: true,
+                              title: 'Delete Family',
+                              message: 'Are you sure you want to delete the family? This action cannot be undone.',
+                              confirmText: 'Delete',
+                              cancelText: 'Cancel',
+                              onConfirm: async () => {
+                                setConfirmState((prev) => ({ ...prev, open: false }));
+                                try {
+                                  const response = await fetch('/api/family/delete-and-leave', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                  });
+                                  if (response.ok) {
+                                    toast.success('Family deleted and you have left.');
+                                    setFamily(null);
+                                    setFamilyMembers([]);
+                                  } else {
+                                    const error = await response.json();
+                                    toast.error(error.error || 'Failed to delete family');
+                                  }
+                                } catch (error) {
+                                  toast.error('Failed to delete family');
+                                }
                               }
-                            } catch (error) {
-                              toast.error('Failed to delete family');
-                            }
+                            });
                           }}>
                             Leave & Delete Family
                           </Button>

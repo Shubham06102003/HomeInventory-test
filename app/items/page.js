@@ -164,7 +164,7 @@ export default function ItemsPage() {
                   size="sm" 
                   onClick={() => {
                     setSearchQuery('')
-                    fetchItems()
+                    fetchFamilyAndItems()
                   }}
                 >
                   Clear
@@ -178,34 +178,37 @@ export default function ItemsPage() {
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                onEdit={(itm) => {
-                  setEditingItem(itm)
-                  setShowEditModal(true)
-                }}
-                onDelete={async (itm) => {
-                  if (!window.confirm('Are you sure you want to delete this item?')) return
-                  try {
-                    const response = await fetch(`/api/items/delete/${itm.id}`, {
-                      method: 'DELETE',
-                      headers: {
-                        'x-family-id': family.id
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={(itm) => {
+                    setEditingItem(itm)
+                    setShowEditModal(true)
+                  }}
+                  onDelete={async (itm) => {
+                    try {
+                      const response = await fetch(`/api/items/delete/${itm.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                          'x-family-id': family.id
+                        }
+                      });
+                      if (response.ok) {
+                        setTimeout(() => {
+                          toast.success('Item deleted successfully!');
+                          fetchFamilyAndItems();
+                        }, 700); // 700ms delay before showing success toast
+                      } else {
+                        const error = await response.json();
+                        setTimeout(() => {
+                          toast.error(error.error || 'Failed to delete item');
+                        }, 700); // 700ms delay before showing error toast
                       }
-                    })
-                    if (response.ok) {
-                      toast.success('Item deleted successfully!')
-                      fetchItems()
-                    } else {
-                      const error = await response.json()
-                      toast.error(error.error || 'Failed to delete item')
+                    } catch (error) {
+                      toast.error('Failed to delete item');
                     }
-                  } catch (error) {
-                    toast.error('Failed to delete item')
-                  }
-                }}
-              />
+                  }}
+                />
             ))}
           </div>
         ) : (
@@ -218,8 +221,7 @@ export default function ItemsPage() {
               <p className="text-gray-600 mb-6">
                 {searchQuery 
                   ? 'Try adjusting your search terms'
-                  : 'Start by adding your first household item'
-                }
+                  : 'Start by adding your first household item'}
               </p>
               {!searchQuery && (
                 <Link href="/items/add">

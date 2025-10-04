@@ -10,8 +10,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
+import { useState } from 'react'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -53,9 +56,34 @@ export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
                 <DropdownMenuItem onClick={e => { e.preventDefault(); onEdit?.(item); }}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={e => { e.preventDefault(); onDelete?.(item); }} className="text-red-600">
+                <DropdownMenuItem onClick={e => { e.preventDefault(); setConfirmOpen(true); }} className="text-red-600">
                   Delete
                 </DropdownMenuItem>
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-md shadow-lg p-3 max-w-[260px] w-full text-center flex flex-col items-center border border-gray-200">
+            <div className="mb-2">
+              <Package className="h-6 w-6 text-red-500 mx-auto" />
+            </div>
+            <h2 className="text-base font-semibold mb-1 text-gray-900">Delete Item</h2>
+            <p className="mb-3 text-xs text-gray-600">Delete <span className="font-medium text-gray-800">{item.name}</span>? This cannot be undone.</p>
+            <div className="flex gap-2 justify-center w-full">
+              <button
+                className="px-2 py-1 rounded bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition w-1/2"
+                onClick={e => { e.stopPropagation(); setConfirmOpen(false); onDelete?.(item); }}
+              >
+                Delete
+              </button>
+              <button
+                className="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 transition w-1/2"
+                onClick={e => { e.stopPropagation(); setConfirmOpen(false); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

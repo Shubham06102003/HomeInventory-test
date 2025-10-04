@@ -162,11 +162,39 @@ async function handleRoute(request, { params }) {
     if (!membership) {
       return handleCORS(NextResponse.json({ error: 'You are not a member of this family' }, { status: 403 }))
     }
+
+    // Find the item first to get image URLs
+    const item = await db.collection('items').findOne({ id: itemId, familyId })
+    if (!item) {
+      return handleCORS(NextResponse.json({ error: 'Item not found' }, { status: 404 }))
+    }
+
+    // Delete images from Cloudinary if present
+    try {
+      const { itemImageUrl, placeImageUrl } = item
+      const { deleteFromCloudinary } = await import('../../../lib/deleteFromCloudinary.js')
+      if (itemImageUrl) {
+        const res = await deleteFromCloudinary(itemImageUrl)
+        if (res.result !== 'ok') {
+          throw new Error('Failed to delete item image from Cloudinary')
+        }
+      }
+      if (placeImageUrl) {
+        const res = await deleteFromCloudinary(placeImageUrl)
+        if (res.result !== 'ok') {
+          throw new Error('Failed to delete place image from Cloudinary')
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting images from Cloudinary:', err)
+      return handleCORS(NextResponse.json({ error: 'Failed to delete images from Cloudinary' }, { status: 500 }))
+    }
+
     const result = await db.collection('items').deleteOne({ id: itemId, familyId })
     if (result.deletedCount === 1) {
       return handleCORS(NextResponse.json({ success: true }))
     } else {
-      return handleCORS(NextResponse.json({ error: 'Item not found or not deleted' }, { status: 404 }))
+      return handleCORS(NextResponse.json({ error: 'Item not deleted' }, { status: 404 }))
     }
   }
 
