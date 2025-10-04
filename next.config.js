@@ -1,4 +1,12 @@
+import withPWA from 'next-pwa';
+
 const nextConfig = {
+  distDir: 'build',
+  reactStrictMode: true,
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV !== 'development',
+  },
   output: 'standalone',
   images: {
     unoptimized: true,
@@ -38,4 +46,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+})(nextConfig);

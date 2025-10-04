@@ -1,0 +1,27 @@
+{
+    "name": "Home Inventory",
+    "short_name": "home inventory",
+    "theme_color": "#00ff00",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "any",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "icons/HI-logo-white-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "icons/HI-logo-white-256.png",
+            "type": "image/png",
+            "sizes": "256x256"
+        },
+        {
+            "src": "icons/HI-logo-white-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ]
+}
