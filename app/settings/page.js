@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { Home, User, LogOut, Shield } from 'lucide-react'
 import Link from 'next/link'
+import Header from '@/components/ui/Header'
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -33,24 +34,14 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Home className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Home Inventory</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-4">
-                <Link href="/family" className="text-gray-600 hover:text-gray-900">Family</Link>
-                <Link href="/items" className="text-gray-600 hover:text-gray-900">Items</Link>
-                <Link href="/items/latest" className="text-gray-600 hover:text-gray-900">Latest</Link>
-              </nav>
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        title="Home Inventory"
+        navLinks={family ? [
+          { href: '/items', label: 'Items' },
+          { href: '/items/latest', label: 'Latest' },
+          { href: '/settings', label: 'Settings' }
+        ] : []}
+      />
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
@@ -68,9 +59,9 @@ export default function SettingsPage() {
                   <User className="h-5 w-5" />
                   Profile Information
                 </CardTitle>
-                <CardDescription>
+                {/* <CardDescription>
                   Your profile information is managed by Clerk authentication
-                </CardDescription>
+                </CardDescription> */}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -151,7 +142,7 @@ export default function SettingsPage() {
               </Card>
             )}
 
-            {/* App Information */}
+            {/* App Information
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -192,7 +183,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Quick Actions */}
             <Card>

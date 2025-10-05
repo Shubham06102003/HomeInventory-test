@@ -205,6 +205,7 @@ export default function FamilyPage() {
     setJoining(false)
   }
 
+  const [inviteCodeVisible, setInviteCodeVisible] = useState(false);
   const copyInviteCode = () => {
     navigator.clipboard.writeText(family.inviteCode)
     toast.success('Invite code copied!')
@@ -267,9 +268,9 @@ export default function FamilyPage() {
                       Your family inventory • {familyMembers.length} member{familyMembers.length !== 1 ? 's' : ''}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary" className="font-mono">
+                  {/* <Badge variant="secondary" className="font-mono">
                     {family.inviteCode}
-                  </Badge>
+                  </Badge> */}
                 </div>
               </CardHeader>
               <CardContent>
@@ -277,7 +278,22 @@ export default function FamilyPage() {
                   <div className="flex-1">
                     <Label className="text-sm font-medium">Invite Code</Label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="bg-gray-100 px-3 py-2 rounded text-sm font-mono">{family.inviteCode}</code>
+                      <code className="bg-gray-100 px-3 py-2 rounded text-sm font-mono select-none">
+                        {inviteCodeVisible ? family.inviteCode : '*'.repeat(family.inviteCode.length)}
+                      </code>
+                      <Button
+                        onClick={() => setInviteCodeVisible(v => !v)}
+                        size="sm"
+                        variant="ghost"
+                        aria-label={inviteCodeVisible ? 'Hide invite code' : 'Show invite code'}
+                        className="px-2"
+                      >
+                        {inviteCodeVisible ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.442-4.362M6.634 6.634A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.96 9.96 0 01-4.284 5.255M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                        )}
+                      </Button>
                       <Button onClick={copyInviteCode} size="sm" variant="outline">
                         <Copy className="h-4 w-4" />
                       </Button>

@@ -15,6 +15,7 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -46,14 +47,18 @@ export default function ItemCard({ item, showDate = false, onEdit, onDelete }) {
           )}
           {/* Dropdown menu top right */}
           <div className="absolute top-2 right-2 z-10">
-            <DropdownMenu>
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <button className="p-1 rounded-full bg-white/80 hover:bg-white shadow border border-gray-200 focus:outline-none">
                   <MoreVertical className="h-5 w-5 text-gray-700" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={e => { e.preventDefault(); onEdit?.(item); }}>
+                <DropdownMenuItem onClick={e => {
+                  e.preventDefault();
+                  setDropdownOpen(false);
+                  setTimeout(() => onEdit?.(item), 0);
+                }}>
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={e => { e.preventDefault(); setConfirmOpen(true); }} className="text-red-600">

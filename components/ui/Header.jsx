@@ -23,7 +23,7 @@ export default function Header({ title, navLinks = [] }) {
             {isMobile ? (
               <div className="relative">
                 <button
-                  className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none"
+                  className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none mr-2"
                   onClick={() => setMenuOpen((open) => !open)}
                   aria-label="Open navigation menu"
                 >
