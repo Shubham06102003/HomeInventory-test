@@ -1,7 +1,7 @@
 {
     "name": "Home Inventory",
     "short_name": "home inventory",
-    "theme_color": "#00ff00",
+    "theme_color": "#ffffff",
     "background_color": "#ffffff",
     "display": "standalone",
     "orientation": "any",
