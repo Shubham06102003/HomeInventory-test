@@ -28,7 +28,7 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-  
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
