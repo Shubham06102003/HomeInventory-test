@@ -237,6 +237,7 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
                 id="itemImage"
                 type="file"
                 accept="image/*"
+                capture="environment"
                 onChange={(e) => handleImageUpload(e, 'item')}
                 className="hidden"
               />
@@ -293,6 +294,7 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
                 id="placeImage"
                 type="file"
                 accept="image/*"
+                capture="environment"
                 onChange={(e) => handleImageUpload(e, 'place')}
                 className="hidden"
               />
