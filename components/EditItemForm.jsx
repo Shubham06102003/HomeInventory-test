@@ -236,8 +236,7 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
               <input
                 id="itemImage"
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,video/*"
                 onChange={(e) => handleImageUpload(e, 'item')}
                 className="hidden"
               />
@@ -293,8 +292,7 @@ export default function EditItemForm({ item, family, onSuccess, onCancel }) {
               <input
                 id="placeImage"
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,video/*"
                 onChange={(e) => handleImageUpload(e, 'place')}
                 className="hidden"
               />
