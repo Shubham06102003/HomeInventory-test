@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { uploadToCloudinary } from '@/lib/uploadToCloudinary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,23 @@ import { toast } from 'sonner'
 import { Upload, X, Image, MapPin } from 'lucide-react'
 
 export default function AddItemForm({ family, onSuccess }) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    // Simple check for mobile or tablet
+    const checkMobile = () => {
+      if (typeof window !== 'undefined') {
+        const ua = navigator.userAgent
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+        setIsMobile(
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) && isTouch
+        )
+      }
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -216,29 +233,63 @@ export default function AddItemForm({ family, onSuccess }) {
               </CardContent>
             </Card>
           ) : (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-              <Image className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <div className="space-y-2">
-                <Label htmlFor="itemImage" className="cursor-pointer">
-                  <Button type="button" variant="outline" asChild>
-                    <span>
+            isMobile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Image className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="space-y-2 flex flex-col items-center w-full">
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('itemImageCamera').click()} className="mb-2 w-full">
                       <Upload className="h-4 w-4 mr-2" />
-                      Upload Item Photo
-                    </span>
-                  </Button>
-                </Label>
-                <p className="text-xs text-gray-500">
-                  Photo of the actual item (PNG, JPG up to 5MB)
-                </p>
+                      Take Photo
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('itemImageGallery').click()} className="w-full">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose from Gallery
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Photo of the actual item (PNG, JPG up to 5MB)
+                    </p>
+                  </div>
+                <input
+                  id="itemImageCamera"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleImageUpload(e, 'item')}
+                  className="hidden"
+                />
+                <input
+                  id="itemImageGallery"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'item')}
+                  className="hidden"
+                />
               </div>
-              <input
-                id="itemImage"
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => handleImageUpload(e, 'item')}
-                className="hidden"
-              />
-            </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Image className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="space-y-2">
+                  <Label htmlFor="itemImageDesktop" className="cursor-pointer">
+                    <Button type="button" variant="outline" asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Item Photo
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Photo of the actual item (PNG, JPG up to 5MB)
+                  </p>
+                </div>
+                <input
+                  id="itemImageDesktop"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'item')}
+                  className="hidden"
+                />
+              </div>
+            )
           )}
         </div>
       </div>
@@ -273,29 +324,63 @@ export default function AddItemForm({ family, onSuccess }) {
               </CardContent>
             </Card>
           ) : (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <div className="space-y-2">
-                <Label htmlFor="placeImage" className="cursor-pointer">
-                  <Button type="button" variant="outline" asChild>
-                    <span>
+            isMobile ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="space-y-2 flex flex-col items-center w-full">
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('placeImageCamera').click()} className="mb-2 w-full">
                       <Upload className="h-4 w-4 mr-2" />
-                      Upload Location Photo
-                    </span>
-                  </Button>
-                </Label>
-                <p className="text-xs text-gray-500">
-                  Photo showing where the item is stored (PNG, JPG up to 5MB)
-                </p>
+                      Take Photo
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('placeImageGallery').click()} className="w-full">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose from Gallery
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Photo showing where the item is stored (PNG, JPG up to 5MB)
+                    </p>
+                  </div>
+                <input
+                  id="placeImageCamera"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleImageUpload(e, 'place')}
+                  className="hidden"
+                />
+                <input
+                  id="placeImageGallery"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'place')}
+                  className="hidden"
+                />
               </div>
-              <input
-                id="placeImage"
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => handleImageUpload(e, 'place')}
-                className="hidden"
-              />
-            </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="space-y-2">
+                  <Label htmlFor="placeImageDesktop" className="cursor-pointer">
+                    <Button type="button" variant="outline" asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Location Photo
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Photo showing where the item is stored (PNG, JPG up to 5MB)
+                  </p>
+                </div>
+                <input
+                  id="placeImageDesktop"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'place')}
+                  className="hidden"
+                />
+              </div>
+            )
           )}
         </div>
       </div>
